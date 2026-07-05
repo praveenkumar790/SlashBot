@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Server {
+  id           String          @id @default(cuid())
+  guildId      String          @unique
+  name         String
+  channelId    String?
+  createdAt    DateTime        @default(now())
+  configs      CommandConfig[]
+  interactions Interaction[]
+}
+
+model CommandConfig {
+  id            String  @id @default(cuid())
+  serverId      String
+  server        Server  @relation(fields: [serverId], references: [id])
+  commandName   String
+  mirrorEnabled Boolean @default(true)
+  aiEnabled     Boolean @default(false)
+  autoReply     Boolean @default(true)
+
+  @@unique([serverId, commandName])
+}
+
+model Interaction {
+  id            String   @id // Discord's interaction id — dedup key
+  serverId      String
+  server        Server   @relation(fields: [serverId], references: [id])
+  discordUserId String
+  username      String
+  commandName   String
+  inputText     String?
+  status        String   @default("pending") // pending | completed | failed
+  responseText  String?
+  mirrorStatus  String   @default("pending") // pending | sent | failed
+  mirrorRetries Int      @default(0)
+  aiSummary     String?
+  aiTag         String?
+  createdAt     DateTime @default(now())
+}
