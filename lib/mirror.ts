@@ -1,4 +1,5 @@
 import { prisma } from './db';
+import { summarizeReport } from './ai';
 
 const MIRROR_WEBHOOK_URL = process.env.MIRROR_WEBHOOK_URL!;
 
@@ -29,7 +30,23 @@ export async function mirrorInteraction(interactionId: string) {
 
   // 3. Mirror the payload
   try {
-    const content = `**New Report from ${interaction.username}** (Server: ${interaction.server.name})\n\n> ${interaction.inputText}`;
+    let aiSummaryStr = '';
+    
+    // Check if AI is enabled and we have input text
+    if (config?.aiEnabled && interaction.inputText) {
+      const summary = await summarizeReport(interaction.inputText);
+      if (summary) {
+        aiSummaryStr = `\n\n**🤖 AI Summary:**\n${summary}`;
+        
+        // Save the summary to the database
+        await prisma.interaction.update({
+          where: { id: interactionId },
+          data: { aiSummary: summary }
+        });
+      }
+    }
+
+    const content = `**New Report from ${interaction.username}** (Server: ${interaction.server.name})\n\n> ${interaction.inputText}${aiSummaryStr}`;
     
     const res = await fetch(MIRROR_WEBHOOK_URL, {
       method: 'POST',
