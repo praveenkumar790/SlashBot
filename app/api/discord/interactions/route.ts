@@ -52,7 +52,7 @@ export async function POST(req: Request) {
 
 // --- Background Processor ---
 
-import { editOriginalResponse } from '@/lib/discord';
+import { editOriginalResponse, getGuild } from '@/lib/discord';
 
 async function processApplicationCommand(body: any) {
   const { id, token, data, guild_id, member, user } = body;
@@ -64,12 +64,20 @@ async function processApplicationCommand(body: any) {
     // 1. Ensure Server exists
     let serverId = '';
     if (guild_id) {
+      let serverName = 'Unknown Server';
+      
+      // Attempt to fetch actual guild name from Discord
+      const guildInfo = await getGuild(guild_id);
+      if (guildInfo?.name) {
+        serverName = guildInfo.name;
+      }
+
       const server = await prisma.server.upsert({
         where: { guildId: guild_id },
-        update: {},
+        update: { name: serverName }, // Update the name in case it changed or was previously Unknown
         create: {
           guildId: guild_id,
-          name: 'Unknown Server',
+          name: serverName,
         },
       });
       serverId = server.id;

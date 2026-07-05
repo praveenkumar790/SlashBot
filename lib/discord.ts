@@ -92,3 +92,23 @@ export async function registerCommands(
     body: JSON.stringify(commands),
   });
 }
+
+/**
+ * Fetch Guild (Server) details from Discord API.
+ */
+export async function getGuild(guildId: string): Promise<{ name: string } | null> {
+  const url = `https://discord.com/api/v10/guilds/${guildId}`;
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
+      },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    console.error(`Failed to fetch guild ${guildId}`, e);
+    return null;
+  }
+}

@@ -1,10 +1,10 @@
 import { GoogleGenAI } from '@google/genai';
 
 // Initialize the Gemini client
-const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GEMINI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export async function summarizeReport(inputText: string): Promise<string> {
-  if (!process.env.GOOGLE_GEMINI_API_KEY) {
+  if (!process.env.GEMINI_API_KEY) {
     console.warn('Google Gemini API Key is missing. Skipping AI summarization.');
     return '';
   }
