@@ -37,11 +37,30 @@ export async function POST(req: Request) {
 
   // Step 3: Handle APPLICATION_COMMAND (type 2)
   if (type === InteractionType.APPLICATION_COMMAND) {
-    const { id, data, guild_id, member, user } = body as any;
-    const commandName = data?.name;
-    const discordUserId = member?.user?.id || user?.id || 'unknown';
-    const username = member?.user?.username || user?.username || 'unknown';
+    // Immediately respond with a DEFERRED message to beat the 3-second timeout limit.
+    // The background task will update the message when it finishes.
+    waitUntil(processApplicationCommand(body));
 
+    return NextResponse.json({
+      type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
+    });
+  }
+
+  // Unknown interaction type
+  return new NextResponse('Unknown interaction type', { status: 400 });
+}
+
+// --- Background Processor ---
+
+import { editOriginalResponse } from '@/lib/discord';
+
+async function processApplicationCommand(body: any) {
+  const { id, token, data, guild_id, member, user } = body;
+  const commandName = data?.name;
+  const discordUserId = member?.user?.id || user?.id || 'unknown';
+  const username = member?.user?.username || user?.username || 'unknown';
+
+  try {
     // 1. Ensure Server exists
     let serverId = '';
     if (guild_id) {
@@ -50,7 +69,7 @@ export async function POST(req: Request) {
         update: {},
         create: {
           guildId: guild_id,
-          name: 'Unknown Server', // Will be updated later via dashboard or other means
+          name: 'Unknown Server',
         },
       });
       serverId = server.id;
@@ -77,45 +96,32 @@ export async function POST(req: Request) {
         },
       });
     } catch (e: any) {
-      // P2002 is Prisma's unique constraint violation code
       if (e.code === 'P2002') {
         console.log(`Duplicate interaction ${id} detected. Ignoring.`);
-        // For retries of simple commands, just returning a success message prevents further retries
-        return NextResponse.json({
-          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-          data: { content: 'Request already processed or in progress.' },
-        });
+        return;
       }
       throw e;
     }
 
-    // 4. Handle specific commands
+    // 4. Handle specific commands and edit the deferred response
     if (commandName === 'status') {
-      return NextResponse.json({
-        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: {
-          content: '🟢 **Bot Status:** Online and connected to database.',
-        },
-      });
+      await editOriginalResponse(token, '🟢 **Bot Status:** Online and connected to database.');
+      return;
     }
 
     if (commandName === 'report') {
-      // Trigger background mirror task
+      await editOriginalResponse(token, `✅ Thanks for your report! I've saved: \`${inputText}\``);
+      // Trigger mirror in the background as well
       waitUntil(mirrorInteraction(id));
-
-      return NextResponse.json({
-        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: {
-          content: `✅ Thanks for your report! I've saved: \`${inputText}\``,
-        },
-      });
+      return;
     }
 
-    // Fallback for unknown commands
-    return NextResponse.json({
-      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-      data: { content: `Received unknown command: ${commandName}` },
-    });
+    // Fallback
+    await editOriginalResponse(token, `Received unknown command: ${commandName}`);
+
+  } catch (error) {
+    console.error('Error processing command:', error);
+    await editOriginalResponse(token, '❌ An error occurred while processing your command.');
   }
 
   // Unknown interaction type
