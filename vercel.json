@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/mirror-retry",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { verifyDiscordRequest } from '@/lib/discord';
+import { prisma } from '@/lib/db';
+import { mirrorInteraction } from '@/lib/mirror';
+import { waitUntil } from '@vercel/functions';
 
 // Discord interaction types
 const InteractionType = {
@@ -32,13 +35,86 @@ export async function POST(req: Request) {
     return NextResponse.json({ type: InteractionResponseType.PONG });
   }
 
-  // Step 3: Handle APPLICATION_COMMAND (type 2) — will be expanded in M4
+  // Step 3: Handle APPLICATION_COMMAND (type 2)
   if (type === InteractionType.APPLICATION_COMMAND) {
+    const { id, data, guild_id, member, user } = body as any;
+    const commandName = data?.name;
+    const discordUserId = member?.user?.id || user?.id || 'unknown';
+    const username = member?.user?.username || user?.username || 'unknown';
+
+    // 1. Ensure Server exists
+    let serverId = '';
+    if (guild_id) {
+      const server = await prisma.server.upsert({
+        where: { guildId: guild_id },
+        update: {},
+        create: {
+          guildId: guild_id,
+          name: 'Unknown Server', // Will be updated later via dashboard or other means
+        },
+      });
+      serverId = server.id;
+    }
+
+    // 2. Extract input text (if any)
+    let inputText = '';
+    if (data?.options && Array.isArray(data.options)) {
+      const msgOption = data.options.find((opt: any) => opt.name === 'message');
+      if (msgOption) inputText = msgOption.value;
+    }
+
+    // 3. Deduplicate interactions (Discord retries on timeout)
+    try {
+      await prisma.interaction.create({
+        data: {
+          id: id,
+          serverId: serverId,
+          discordUserId,
+          username,
+          commandName,
+          inputText,
+          status: 'completed',
+        },
+      });
+    } catch (e: any) {
+      // P2002 is Prisma's unique constraint violation code
+      if (e.code === 'P2002') {
+        console.log(`Duplicate interaction ${id} detected. Ignoring.`);
+        // For retries of simple commands, just returning a success message prevents further retries
+        return NextResponse.json({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: { content: 'Request already processed or in progress.' },
+        });
+      }
+      throw e;
+    }
+
+    // 4. Handle specific commands
+    if (commandName === 'status') {
+      return NextResponse.json({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: '🟢 **Bot Status:** Online and connected to database.',
+        },
+      });
+    }
+
+    if (commandName === 'report') {
+      // Trigger background mirror task
+      waitUntil(mirrorInteraction(id));
+
+      return NextResponse.json({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: `✅ Thanks for your report! I've saved: \`${inputText}\``,
+        },
+      });
+    }
+
+    // Fallback for unknown commands
     return NextResponse.json({
       type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-      data: {
-        content: '🤖 Bot is online! Command handling coming soon.',
-      },
+      data: { content: `Received unknown command: ${commandName}` },
     });
   }
 
