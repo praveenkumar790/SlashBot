@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { RefreshCw, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { RefreshCw, CheckCircle2, XCircle, Clock, Sparkles } from 'lucide-react';
 import { revalidatePath } from 'next/cache';
 
 export default async function DashboardPage() {
@@ -52,43 +52,59 @@ export default async function DashboardPage() {
             </thead>
             <tbody className="divide-y divide-border bg-surface">
               {interactions.map((interaction) => (
-                <tr key={interaction.id} className="hover:bg-surface-hover/80 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-foreground">{interaction.username}</div>
-                    <div className="text-xs text-foreground/50">{interaction.discordUserId}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-foreground/80">{interaction.server?.name || 'Unknown'}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-                      /{interaction.commandName}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-foreground/80 max-w-xs truncate" title={interaction.inputText || ''}>
-                      {interaction.inputText || '-'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {interaction.commandName === 'report' ? (
-                      <div className="flex items-center gap-2">
-                        {interaction.mirrorStatus === 'sent' && <CheckCircle2 size={16} className="text-emerald-500" />}
-                        {interaction.mirrorStatus === 'failed' && <XCircle size={16} className="text-red-500" />}
-                        {interaction.mirrorStatus === 'pending' && <Clock size={16} className="text-amber-500" />}
-                        <span className="text-sm text-foreground/80 capitalize">{interaction.mirrorStatus}</span>
-                        {interaction.mirrorRetries > 0 && (
-                          <span className="text-xs text-foreground/50 ml-1">({interaction.mirrorRetries} retries)</span>
-                        )}
+                <>
+                  <tr key={interaction.id} className="hover:bg-surface-hover/80 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-foreground">{interaction.username}</div>
+                      <div className="text-xs text-foreground/50">{interaction.discordUserId}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-foreground/80">{interaction.server?.name || 'Unknown'}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                        /{interaction.commandName}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-foreground/80 max-w-xs truncate" title={interaction.inputText || ''}>
+                        {interaction.inputText || '-'}
                       </div>
-                    ) : (
-                      <span className="text-sm text-foreground/40">-</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground/60">
-                    {new Date(interaction.createdAt).toLocaleString()}
-                  </td>
-                </tr>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {interaction.commandName === 'report' ? (
+                        <div className="flex items-center gap-2">
+                          {interaction.mirrorStatus === 'sent' && <CheckCircle2 size={16} className="text-emerald-500" />}
+                          {interaction.mirrorStatus === 'failed' && <XCircle size={16} className="text-red-500" />}
+                          {interaction.mirrorStatus === 'pending' && <Clock size={16} className="text-amber-500" />}
+                          <span className="text-sm text-foreground/80 capitalize">{interaction.mirrorStatus}</span>
+                          {interaction.mirrorRetries > 0 && (
+                            <span className="text-xs text-foreground/50 ml-1">({interaction.mirrorRetries} retries)</span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-foreground/40">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground/60">
+                      {new Date(interaction.createdAt).toLocaleString()}
+                    </td>
+                  </tr>
+                  {/* AI Summary sub-row */}
+                  {interaction.aiSummary && (
+                    <tr key={`${interaction.id}-ai`} className="bg-primary/5">
+                      <td colSpan={6} className="px-6 py-3">
+                        <div className="flex items-start gap-2">
+                          <Sparkles size={16} className="text-primary mt-0.5 flex-shrink-0" />
+                          <div>
+                            <span className="text-xs font-semibold text-primary uppercase tracking-wider">AI Summary</span>
+                            <p className="text-sm text-foreground/80 mt-1">{interaction.aiSummary}</p>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
               {interactions.length === 0 && (
                 <tr>

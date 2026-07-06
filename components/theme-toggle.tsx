@@ -4,17 +4,36 @@ import * as React from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
-export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+export function ThemeToggle({ collapsed = false }: { collapsed?: boolean }) {
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  // Avoid hydration mismatch — only render icon after mount
+  React.useEffect(() => setMounted(true), []);
 
   return (
     <button
-      onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-      className="p-2 rounded-md hover:bg-surface-hover text-foreground/80 hover:text-foreground transition-colors border border-border bg-surface"
+      onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+      className={`relative flex items-center gap-2.5 rounded-lg transition-all text-foreground/70 hover:text-foreground hover:bg-surface-hover ${
+        collapsed ? 'justify-center p-2.5' : 'px-3 py-2.5'
+      }`}
       aria-label="Toggle theme"
+      title={mounted ? (resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode') : 'Toggle theme'}
     >
-      <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" style={{ marginTop: '-1.2rem' }} />
+      {mounted ? (
+        resolvedTheme === 'dark' ? (
+          <Sun size={18} className="flex-shrink-0" />
+        ) : (
+          <Moon size={18} className="flex-shrink-0" />
+        )
+      ) : (
+        <Sun size={18} className="flex-shrink-0" />
+      )}
+      {!collapsed && (
+        <span className="text-sm font-medium whitespace-nowrap overflow-hidden">
+          {mounted ? (resolvedTheme === 'dark' ? 'Light Mode' : 'Dark Mode') : 'Toggle Theme'}
+        </span>
+      )}
     </button>
   );
 }
