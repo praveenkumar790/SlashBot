@@ -90,7 +90,7 @@ export function InteractionDrawer({ interaction, onClose }: InteractionDrawerPro
               <div>
                 <span className="text-[10px] font-bold text-foreground/40 uppercase tracking-wider block">Timestamp</span>
                 <span className="text-sm font-semibold text-foreground block mt-1">
-                  {new Date(interaction.createdAt).toLocaleString()}
+                  {mounted ? new Date(interaction.createdAt).toLocaleString() : ''}
                 </span>
               </div>
             </div>

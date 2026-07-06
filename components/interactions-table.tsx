@@ -15,8 +15,10 @@ export function InteractionsTable({ initialInteractions }: InteractionsTableProp
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
   const [activeInteraction, setActiveInteraction] = React.useState<any | null>(null);
   const [isRetrying, setIsRetrying] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
+    setMounted(true);
     // Auto-refresh the page data every 5 seconds to show new Discord reports instantly
     const interval = setInterval(() => {
       router.refresh();
@@ -160,7 +162,7 @@ export function InteractionsTable({ initialInteractions }: InteractionsTableProp
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground/60">
-                      {new Date(interaction.createdAt).toLocaleString()}
+                      {mounted ? new Date(interaction.createdAt).toLocaleString() : ''}
                     </td>
                   </tr>
                 );

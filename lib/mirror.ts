@@ -46,8 +46,12 @@ export async function mirrorInteraction(interactionId: string) {
       }
     }
 
-    const content = `**New Report from ${interaction.username}** (Server: ${interaction.server.name})\n\n> ${interaction.inputText}${aiSummaryStr}`;
+    let content = `**New Report from ${interaction.username}** (Server: ${interaction.server.name})\n\n> ${interaction.inputText}${aiSummaryStr}`;
     
+    if (content.length > 2000) {
+      content = content.slice(0, 1997) + '...';
+    }
+
     const res = await fetch(MIRROR_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
