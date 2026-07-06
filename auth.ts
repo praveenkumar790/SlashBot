@@ -16,13 +16,11 @@ export const { auth, signIn, signOut, handlers: { GET, POST } } = NextAuth({
 
         const { email, password } = credentials;
 
-        // In a real app, you'd fetch the user from a database here.
-        // For this single-tenant admin bot, we use ENV variables.
         const adminEmail = process.env.ADMIN_EMAIL;
         const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
 
         if (!adminEmail || !adminPasswordHash) {
-          console.error("Missing admin credentials in environment variables.");
+          console.error('Missing ADMIN_EMAIL or ADMIN_PASSWORD_HASH in environment variables.');
           return null;
         }
 

@@ -42,10 +42,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <div className="absolute top-6 left-6 z-20">
         <Link
           href="/"
-          className="flex items-center gap-2 text-sm font-medium text-foreground/60 hover:text-foreground transition-colors"
+          className="flex items-center gap-2.5 hover:scale-[1.03] transition-transform"
         >
-          <ArrowLeft size={16} />
-          Back to Home
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white shadow-md shadow-primary/20">
+            <Bot size={18} />
+          </div>
+          <span className="font-bold text-base tracking-tight text-foreground">SlashBot</span>
         </Link>
       </div>
       <div className="absolute top-6 right-6 z-20">
