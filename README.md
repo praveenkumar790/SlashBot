@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Discord Slash-Command Bot
 
-## Getting Started
+A full-stack Next.js application that integrates with Discord to process slash commands, generate AI summaries, and mirror reports to secondary webhooks.
 
-First, run the development server:
+## Features
+- **Discord Integration**: Handles `/report` and `/status` slash commands using HTTP interactions.
+- **Ed25519 Security**: Cryptographically verifies all incoming requests from Discord.
+- **AI Summarization**: Uses Google Gemini to automatically summarize user reports.
+- **Webhook Mirroring**: Forwards reports and their AI summaries to a secondary Discord channel.
+- **Admin Dashboard**: Secure NextAuth dashboard to view the command log, monitor mirror success/failure, retry failed webhooks, and configure server-specific rules.
 
+## Tech Stack
+- **Framework**: Next.js 15 (App Router)
+- **Database**: PostgreSQL (Neon) with Prisma ORM
+- **Authentication**: NextAuth.js
+- **AI**: `@google/genai` (Gemini 2.5 Flash)
+- **Styling**: Tailwind CSS, Lucide Icons
+
+---
+
+## 🚀 How to Test It
+
+1. **Live URL**: https://slash-bot-alpha.vercel.app/
+2. **Test Admin Login**:
+   - Email: `[EMAIL_ADDRESS]`
+   - Password: `[PASSWORD]`
+3. **Add Bot to your Discord Server**: 
+   - [Click here to invite the bot](https://discord.com/oauth2/authorize?client_id=1523291537725980842&permissions=2147502080&integration_type=0&scope=bot+applications.commands)
+
+Once added, type `/report message: <your text>` in your server. The bot will acknowledge it, run it through AI, and you'll see the record appear in the dashboard!
+
+---
+
+## 💻 Running Locally
+
+### 1. Clone & Install
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <your-repo-url>
+cd SlashBot
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Environment Variables
+Create a `.env` file in the root directory and copy the contents from `.env.example`. Fill in the required secrets:
+- `DATABASE_URL`: Your PostgreSQL connection string.
+- `DISCORD_PUBLIC_KEY`: From your Discord Developer Portal.
+- `DISCORD_BOT_TOKEN`: From your Discord Developer Portal.
+- `MIRROR_WEBHOOK_URL`: A webhook URL for a separate Discord/Slack channel.
+- `GEMINI_API_KEY`: Your Google AI Studio API key.
+- `NEXTAUTH_SECRET`: Generate one using `openssl rand -base64 32`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Database Setup
+```bash
+npx prisma generate
+npx prisma db push
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4. Run the Dev Server
+```bash
+npm run dev
+```
+The app will run on `http://localhost:3000`. 
+*Note: To receive live Discord webhook events locally, you must use a tunnel like ngrok (`ngrok http 3000`) and update your Interactions Endpoint URL in the Discord Portal to `https://<your-ngrok-url>/api/discord/interactions`.*
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## ☁️ Deployment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is deployed on **Vercel**. 
+- The PostgreSQL database is hosted on **Neon**.
+- Background async tasks (like mirroring and AI processing) utilize Vercel's `waitUntil` function to respect Discord's strict 3-second response window while allowing long-running serverless processes to finish safely.
